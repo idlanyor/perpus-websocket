@@ -23,7 +23,7 @@
 <div class="bg-white p-5 rounded-lg shadow-md">
     <h2 class="text-xl font-bold mb-4">Daftar Peminjam</h2>
     <div class="overflow-x-auto">
-        <table class="min-w-full">
+        <table class="min-w-full whitespace-nowrap">
             <thead class="bg-gray-100">
                 <tr>
                     <th class="py-2 px-4 text-left">Nama</th>
@@ -98,11 +98,11 @@ function loadBorrowers() {
                         <td class="py-2 px-4">
                             <button onclick="showEditModal(${borrower.id})" 
                                 class="bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600 mr-2">
-                                Edit
+                                <i class="fa fa-pencil"></i>
                             </button>
                             <button onclick="deleteBorrower(${borrower.id})" 
                                 class="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600">
-                                Hapus
+                                <i class="fa fa-trash"></i>
                             </button>
                         </td>
                     </tr>

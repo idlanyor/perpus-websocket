@@ -40,7 +40,7 @@
 <div class="bg-white p-5 rounded-lg shadow-md">
     <h2 class="text-xl font-bold mb-4">Daftar Peminjaman</h2>
     <div class="overflow-x-auto">
-        <table class="min-w-full">
+        <table class="min-w-full whitespace-nowrap">
             <thead class="bg-gray-100">
                 <tr>
                     <th class="py-2 px-4 text-left">Tanggal Pinjam</th>
@@ -107,13 +107,13 @@ function loadBorrowings() {
                         <td class="py-2 px-4 space-y-2">
                             ${borrowing.status === 'aktif' ? `
                                 <button onclick="returnBorrowing(${borrowing.id})" 
-                                    class="bg-yellow-300 text-white px-2 py-1 rounded hover:bg-blue-600 mr-2">
-                                    Kembali
+                                    class="bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600 mr-2">
+                                    <i class="fa fa-calendar-check"></i>
                                 </button>
                             ` : ''}
                             <button onclick="deleteBorrowing(${borrowing.id})" 
                                 class="bg-red-700 text-white px-2 py-1 rounded hover:bg-red-600">
-                                🗑️
+                                <i class="fa fa-trash"></i>
                             </button>
                         </td>
                     </tr>

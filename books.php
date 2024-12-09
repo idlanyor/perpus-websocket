@@ -27,7 +27,7 @@
 <div class="bg-white p-5 rounded-lg shadow-md">
     <h2 class="text-xl font-bold mb-4">Daftar Buku</h2>
     <div class="overflow-x-auto">
-        <table class="min-w-full">
+        <table class="min-w-full whitespace-nowrap">
             <thead class="bg-gray-100">
                 <tr>
                     <th class="py-2 px-4 text-left">Judul</th>
@@ -107,11 +107,11 @@ function loadBooks() {
                         <td class="py-2 px-4 space-y-2">
                             <button onclick="showEditModal(${book.id})" 
                                 class="bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600 mr-2">
-                                ✏️
+                                <i class="fa fa-pencil"></i>
                             </button>
                             <button onclick="deleteBook(${book.id})" 
                                 class="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600">
-                                🗑️
+                                <i class="fa fa-trash"></i>
                             </button>
                         </td>
                     </tr>

@@ -15,9 +15,9 @@ $db = new Database();
     <link rel="stylesheet" href="style.css">
 </head>
 
-<body class="min-h-screen bg-gray-100">
+<body class="min-h-screen bg-gray-300">
     <!-- Topbar -->
-    <div class="bg-gray-800 p-5 flex items-center justify-between fixed top-0 w-full">
+    <!-- <div class="bg-gray-800 p-5 flex items-center justify-between fixed top-0 w-full">
         <div class="text-white">
             <span>Aplikasi Peminjaman Buku</span>
         </div>
@@ -26,5 +26,5 @@ $db = new Database();
             <a href="books.php" class="text-white hover:text-gray-300">Manajemen Buku</a>
             <a href="borrowers.php" class="text-white hover:text-gray-300">Data Peminjam</a>
         </div>
-    </div>
-    <div class="container mx-auto p-5 mt-16">
+    </div> -->
+    <div class="container mx-auto p-5 mt-10 mb-16">
