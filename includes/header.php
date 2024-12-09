@@ -12,6 +12,7 @@ $db = new Database();
     <title>Sistem Perpustakaan</title>
     <script src="https://kit.fontawesome.com/3c2f0f4372.js" crossorigin="anonymous"></script>
     <script src="assets/js/websocket-client.js"></script>
+    <link rel="stylesheet" href="style.css">
 </head>
 
 <body class="min-h-screen bg-gray-100">
