@@ -1,0 +1,9 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{REQUEST_METHOD} ^(DELETE)
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+</IfModule>
+
+# Allow DELETE method
+Header always set Access-Control-Allow-Methods "POST, GET, OPTIONS, DELETE"
+Header always set Access-Control-Allow-Headers "Content-Type" 

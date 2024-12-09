@@ -1,0 +1,13 @@
+{
+    "require": {
+        "cboden/ratchet": "^0.4.4",
+        "react/event-loop": "^1.5",
+        "react/socket": "^1.15",
+        "monolog/monolog": "^3.5"
+    },
+    "autoload": {
+        "psr-4": {
+            "Library\\": "src/"
+        }
+    }
+} 

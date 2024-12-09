@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplikasi Pencatatan Peminjaman Buku Perpustakaan</title>
+    <script src="https://unpkg.com/htmx.org@1.9.12/dist/htmx.min.js"></script>
+</head>
+<body class="min-h-screen bg-gray-100">
+    <!-- Topbar -->
+    <div class="bg-gray-800 py-2 px-4 flex items-center justify-between fixed top-0 w-full">
+        <div class="text-white">
+            <span>Aplikasi Peminjaman Buku</span>
+        </div>
+        <div class="flex gap-4">
+            <a href="index.html" class="text-white hover:text-gray-300">Peminjaman</a>
+            <a href="books.html" class="text-white hover:text-gray-300">Manajemen Buku</a>
+            <a href="borrowers.html" class="text-white hover:text-gray-300">Data Peminjam</a>
+        </div>
+    </div>
+
+    <!-- Konten Utama -->
+    <div class="container mx-auto p-5 mt-16">
+        <!-- Card untuk Input Peminjaman -->
+        <div class="bg-white p-5 rounded-lg shadow-md mb-5">
+            <h2 class="text-xl font-bold mb-4">Tambah Peminjaman Baru</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <select id="bookSelect" class="p-2 border rounded-lg">
+                    <option value="">Pilih Buku...</option>
+                </select>
+                <select id="borrowerSelect" class="p-2 border rounded-lg">
+                    <option value="">Pilih Peminjam...</option>
+                </select>
+                <input type="date" id="returnDateInput" 
+                    class="p-2 border rounded-lg" 
+                    min="" 
+                    placeholder="Tanggal Pengembalian">
+            </div>
+            <button onclick="createBorrowing()" 
+                class="mt-4 bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600">
+                Tambah Peminjaman
+            </button>
+        </div>
+
+        <!-- Daftar Peminjaman -->
+        <div class="bg-white p-5 rounded-lg shadow-md">
+            <h2 class="text-xl font-bold mb-4">Daftar Peminjaman</h2>
+            <table class="min-w-full">
+                <thead class="bg-gray-100">
+                    <tr>
+                        <th class="py-2 px-4 text-left">Tanggal Pinjam</th>
+                        <th class="py-2 px-4 text-left">Batas Kembali</th>
+                        <th class="py-2 px-4 text-left">Judul Buku</th>
+                        <th class="py-2 px-4 text-left">Peminjam</th>
+                        <th class="py-2 px-4 text-left">Status</th>
+                        <th class="py-2 px-4 text-left">Denda</th>
+                        <th class="py-2 px-4 text-left">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="borrowingsList">
+                    <!-- Daftar peminjaman akan ditampilkan di sini -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Fungsi debugging dan pemeriksaan data
+        function checkData() {
+            console.log('Checking data...');
+            console.log('Books:', getBooks());
+            console.log('Borrowers:', getBorrowers());
+            console.log('Borrowings:', getBorrowings());
+        }
+
+        // Fungsi untuk books
+        function getBooks() {
+            return JSON.parse(localStorage.getItem('books') || '[]');
+        }
+
+        function saveBooks(books) {
+            localStorage.setItem('books', JSON.stringify(books));
+        }
+
+        // Fungsi untuk borrowings
+        function getBorrowings() {
+            return JSON.parse(localStorage.getItem('borrowings') || '[]');
+        }
+
+        function saveBorrowings(borrowings) {
+            localStorage.setItem('borrowings', JSON.stringify(borrowings));
+        }
+
+        // Fungsi untuk borrowers
+        function getBorrowers() {
+            return JSON.parse(localStorage.getItem('borrowers') || '[]');
+        }
+
+        function saveBorrowers(borrowers) {
+            localStorage.setItem('borrowers', JSON.stringify(borrowers));
+        }
+
+        function populateSelects() {
+            const bookSelect = document.getElementById('bookSelect');
+            const borrowerSelect = document.getElementById('borrowerSelect');
+            
+            // Debug data
+            console.log('Populating selects...');
+            checkData();
+            
+            // Populate books
+            const books = getBooks();
+            bookSelect.innerHTML = '<option value="">Pilih Buku...</option>';
+            if (books && books.length > 0) {
+                books.forEach((book, index) => {
+                    // Hanya tampilkan buku yang memiliki stok
+                    if (book.stock > 0) {
+                        bookSelect.innerHTML += `
+                            <option value='${JSON.stringify({title: book.title, index: index})}'>
+                                ${book.title} - ${book.author} (Stok: ${book.stock})
+                            </option>
+                        `;
+                    } else {
+                        bookSelect.innerHTML += `
+                            <option value="" disabled class="text-gray-400">
+                                ${book.title} - ${book.author} (Stok Habis)
+                            </option>
+                        `;
+                    }
+                });
+            } else {
+                bookSelect.innerHTML += `
+                    <option value="" disabled>Tidak ada buku tersedia</option>
+                `;
+            }
+            
+            // Populate borrowers
+            const borrowers = getBorrowers();
+            borrowerSelect.innerHTML = '<option value="">Pilih Peminjam...</option>';
+            if (borrowers && borrowers.length > 0) {
+                borrowers.forEach((borrower, index) => {
+                    borrowerSelect.innerHTML += `
+                        <option value='${JSON.stringify({name: borrower.name, index: index})}'>
+                            ${borrower.name} - ${borrower.idNumber}
+                        </option>
+                    `;
+                });
+            } else {
+                borrowerSelect.innerHTML += `
+                    <option value="" disabled>Tidak ada peminjam tersedia</option>
+                `;
+            }
+        }
+
+        // Tambahkan fungsi untuk menghitung denda
+        function calculateFine(borrowDate, returnDate, actualReturnDate = null) {
+            const returnDateObj = new Date(returnDate);
+            const actualDate = actualReturnDate ? new Date(actualReturnDate) : new Date();
+            
+            // Jika belum melewati batas waktu
+            if (actualDate <= returnDateObj) {
+                return 0;
+            }
+
+            // Hitung selisih hari
+            const diffTime = Math.abs(actualDate - returnDateObj);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            // Hitung denda (Rp 500 per hari)
+            return diffDays * 500;
+        }
+
+        // Format currency ke Rupiah
+        function formatRupiah(amount) {
+            return new Intl.NumberFormat('id-ID', {
+                style: 'currency',
+                currency: 'IDR'
+            }).format(amount);
+        }
+
+        function createBorrowing() {
+            const bookSelect = document.getElementById('bookSelect');
+            const borrowerSelect = document.getElementById('borrowerSelect');
+            const returnDate = document.getElementById('returnDateInput').value;
+
+            if (!bookSelect.value || !borrowerSelect.value || !returnDate) {
+                alert('Silakan lengkapi semua data peminjaman!');
+                return;
+            }
+
+            try {
+                const bookData = JSON.parse(bookSelect.value);
+                const borrowerData = JSON.parse(borrowerSelect.value);
+                
+                const books = getBooks();
+                const borrowers = getBorrowers();
+                const selectedBook = books[bookData.index];
+                const selectedBorrower = borrowers[borrowerData.index];
+
+                if (selectedBook.stock <= 0) {
+                    alert('Maaf, stok buku ini sedang kosong!');
+                    return;
+                }
+
+                // Kurangi stok
+                selectedBook.stock--;
+                books[bookData.index] = selectedBook;
+                saveBooks(books);
+
+                const borrowDate = new Date().toISOString().split('T')[0];
+                
+                const borrowings = getBorrowings();
+                borrowings.push({
+                    date: borrowDate,
+                    returnDate: returnDate,
+                    bookTitle: selectedBook.title,
+                    bookAuthor: selectedBook.author,
+                    borrowerName: selectedBorrower.name,
+                    borrowerId: selectedBorrower.idNumber,
+                    bookIndex: bookData.index,
+                    status: 'aktif',
+                    actualReturnDate: null
+                });
+                saveBorrowings(borrowings);
+                
+                // Reset form
+                bookSelect.value = '';
+                borrowerSelect.value = '';
+                document.getElementById('returnDateInput').value = '';
+                
+                renderBorrowings();
+                populateSelects();
+                alert('Peminjaman berhasil ditambahkan!');
+            } catch (error) {
+                console.error('Error creating borrowing:', error);
+                alert('Terjadi kesalahan saat menambahkan peminjaman!');
+            }
+        }
+
+        function deleteBorrowing(index) {
+            if (confirm('Apakah Anda yakin ingin menghapus data peminjaman ini?')) {
+                const borrowings = getBorrowings();
+                const borrowing = borrowings[index];
+                
+                // Jika peminjaman masih aktif, kembalikan stok saat dihapus
+                if (borrowing.status === 'aktif') {
+                    const books = getBooks();
+                    const bookIndex = borrowing.bookIndex;
+                    if (books[bookIndex]) {
+                        books[bookIndex].stock++;
+                        saveBooks(books);
+                    }
+                }
+
+                borrowings.splice(index, 1);
+                saveBorrowings(borrowings);
+                renderBorrowings();
+                populateSelects();  // Refresh daftar buku untuk update stok
+            }
+        }
+
+        function toggleBorrowingStatus(index) {
+            const borrowings = getBorrowings();
+            const borrowing = borrowings[index];
+            const newStatus = borrowing.status === 'aktif' ? 'selesai' : 'aktif';
+            
+            if (newStatus === 'selesai') {
+                const books = getBooks();
+                const bookIndex = borrowing.bookIndex;
+                if (books[bookIndex]) {
+                    books[bookIndex].stock++;
+                    saveBooks(books);
+                    borrowing.actualReturnDate = new Date().toISOString().split('T')[0];
+                }
+            } else {
+                const books = getBooks();
+                const bookIndex = borrowing.bookIndex;
+                if (books[bookIndex]) {
+                    books[bookIndex].stock--;
+                    saveBooks(books);
+                    borrowing.actualReturnDate = null;
+                }
+            }
+
+            borrowing.status = newStatus;
+            saveBorrowings(borrowings);
+            renderBorrowings();
+            populateSelects();
+        }
+
+        function renderBorrowings() {
+            const tbody = document.getElementById('borrowingsList');
+            const borrowings = getBorrowings();
+            
+            tbody.innerHTML = borrowings.length === 0 
+                ? '<tr><td colspan="7" class="py-4 text-center">Tidak ada data peminjaman</td></tr>'
+                : borrowings.map((borrowing, index) => {
+                    const fine = calculateFine(borrowing.date, borrowing.returnDate, borrowing.actualReturnDate);
+                    return `
+                        <tr class="border-t">
+                            <td class="py-2 px-4">${borrowing.date}</td>
+                            <td class="py-2 px-4">${borrowing.returnDate}</td>
+                            <td class="py-2 px-4">${borrowing.bookTitle}</td>
+                            <td class="py-2 px-4">${borrowing.borrowerName}</td>
+                            <td class="py-2 px-4">
+                                <span class="px-2 py-1 rounded ${
+                                    borrowing.status === 'aktif' 
+                                        ? 'bg-green-100 text-green-800' 
+                                        : 'bg-gray-100 text-gray-800'
+                                }">
+                                    ${borrowing.status}
+                                </span>
+                            </td>
+                            <td class="py-2 px-4 ${fine > 0 ? 'text-red-600 font-bold' : ''}">
+                                ${formatRupiah(fine)}
+                            </td>
+                            <td class="py-2 px-4">
+                                <button onclick="toggleBorrowingStatus(${index})" 
+                                    class="bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600 mr-2">
+                                    ${borrowing.status === 'aktif' ? 'Selesai' : 'Aktifkan'}
+                                </button>
+                                <button onclick="deleteBorrowing(${index})" 
+                                    class="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600">
+                                    Hapus
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+        }
+
+        // Inisialisasi dan debugging
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Page loaded, checking data...');
+            checkData();
+            populateSelects();
+            renderBorrowings();
+            
+            // Set tanggal minimal untuk input tanggal pengembalian
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('returnDateInput').min = today;
+        });
+
+        // Tambahkan event listener untuk refresh data
+        window.addEventListener('storage', function(e) {
+            console.log('Storage changed, refreshing data...');
+            populateSelects();
+            renderBorrowings();
+        });
+    </script>
+
+</body>
+</html>

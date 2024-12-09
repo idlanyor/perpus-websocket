@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manajemen Buku Perpustakaan</title>
+    <script src="https://unpkg.com/htmx.org@1.9.12/dist/htmx.min.js"></script>
+</head>
+<body class="min-h-screen bg-gray-100">
+    <!-- Topbar -->
+    <div class="bg-gray-800 py-2 px-4 flex items-center justify-between fixed top-0 w-full">
+        <div class="text-white">
+            <span>Aplikasi Peminjaman Buku</span>
+        </div>
+        <div class="flex gap-4">
+            <a href="index.html" class="text-white hover:text-gray-300">Peminjaman</a>
+            <a href="books.html" class="text-white hover:text-gray-300">Manajemen Buku</a>
+            <a href="borrowers.html" class="text-white hover:text-gray-300">Data Peminjam</a>
+        </div>
+    </div>
+
+    <!-- Konten Utama -->
+    <div class="container mx-auto p-5 mt-16">
+        <!-- Form Tambah Buku -->
+        <div class="bg-white p-5 rounded-lg shadow-md mb-5">
+            <h2 class="text-xl font-bold mb-4">Tambah Buku Baru</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <input id="titleInput" type="text" placeholder="Judul Buku" 
+                    class="p-2 border rounded-lg">
+                <input id="authorInput" type="text" placeholder="Penulis" 
+                    class="p-2 border rounded-lg">
+                <input id="publisherInput" type="text" placeholder="Penerbit" 
+                    class="p-2 border rounded-lg">
+                <input id="yearInput" type="number" placeholder="Tahun Terbit" 
+                    class="p-2 border rounded-lg">
+                <input id="stockInput" type="number" placeholder="Stok" 
+                    class="p-2 border rounded-lg" min="0">
+                <input id="shelfInput" type="text" placeholder="Nomor Rak" 
+                    class="p-2 border rounded-lg">
+            </div>
+            <button onclick="createBook()" 
+                class="mt-4 bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600">
+                Tambah Buku
+            </button>
+        </div>
+
+        <!-- Daftar Buku -->
+        <div class="bg-white p-5 rounded-lg shadow-md">
+            <h2 class="text-xl font-bold mb-4">Daftar Buku</h2>
+            <table class="min-w-full">
+                <thead class="bg-gray-100">
+                    <tr>
+                        <th class="py-2 px-4 text-left">Judul</th>
+                        <th class="py-2 px-4 text-left">Penulis</th>
+                        <th class="py-2 px-4 text-left">Penerbit</th>
+                        <th class="py-2 px-4 text-left">Tahun</th>
+                        <th class="py-2 px-4 text-left">Stok</th>
+                        <th class="py-2 px-4 text-left">Rak</th>
+                        <th class="py-2 px-4 text-left">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="booksList">
+                    <!-- Daftar buku akan ditampilkan di sini -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Modal Edit Buku -->
+    <div id="editModal" class="fixed inset-0 bg-black bg-opacity-50 hidden">
+        <div class="bg-white p-5 rounded-lg w-96 mx-auto mt-20">
+            <h2 class="text-xl font-bold mb-4">Edit Data Buku</h2>
+            <input type="hidden" id="editIndex">
+            <div class="space-y-3">
+                <input id="editTitleInput" type="text" placeholder="Judul Buku" 
+                    class="p-2 border rounded-lg w-full">
+                <input id="editAuthorInput" type="text" placeholder="Penulis" 
+                    class="p-2 border rounded-lg w-full">
+                <input id="editPublisherInput" type="text" placeholder="Penerbit" 
+                    class="p-2 border rounded-lg w-full">
+                <input id="editYearInput" type="number" placeholder="Tahun Terbit" 
+                    class="p-2 border rounded-lg w-full">
+                <input id="editStockInput" type="number" placeholder="Stok" 
+                    class="p-2 border rounded-lg w-full" min="0">
+                <input id="editShelfInput" type="text" placeholder="Nomor Rak" 
+                    class="p-2 border rounded-lg w-full">
+            </div>
+            <div class="flex justify-end gap-2 mt-4">
+                <button onclick="updateBook()" 
+                    class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">
+                    Simpan
+                </button>
+                <button onclick="closeEditModal()" 
+                    class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600">
+                    Batal
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function getBooks() {
+            return JSON.parse(localStorage.getItem('books') || '[]');
+        }
+
+        function saveBooks(books) {
+            localStorage.setItem('books', JSON.stringify(books));
+        }
+
+        function renderBooks() {
+            const tbody = document.getElementById('booksList');
+            const books = getBooks();
+            
+            tbody.innerHTML = books.length === 0 
+                ? '<tr><td colspan="7" class="py-4 text-center">Tidak ada buku</td></tr>'
+                : books.map((book, index) => `
+                    <tr class="border-t">
+                        <td class="py-2 px-4">${book.title}</td>
+                        <td class="py-2 px-4">${book.author}</td>
+                        <td class="py-2 px-4">${book.publisher}</td>
+                        <td class="py-2 px-4">${book.year}</td>
+                        <td class="py-2 px-4">${book.stock || 0}</td>
+                        <td class="py-2 px-4">${book.shelf || '-'}</td>
+                        <td class="py-2 px-4">
+                            <button onclick="showEditModal(${index})" 
+                                class="bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600 mr-2">
+                                Edit
+                            </button>
+                            <button onclick="deleteBook(${index})" 
+                                class="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600">
+                                Hapus
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+        }
+
+        function createBook() {
+            const title = document.getElementById('titleInput').value.trim();
+            const author = document.getElementById('authorInput').value.trim();
+            const publisher = document.getElementById('publisherInput').value.trim();
+            const year = document.getElementById('yearInput').value;
+            const stock = document.getElementById('stockInput').value;
+            const shelf = document.getElementById('shelfInput').value.trim();
+
+            if (title && author && publisher && year) {
+                const books = getBooks();
+                books.push({ 
+                    title, 
+                    author, 
+                    publisher, 
+                    year,
+                    stock: stock || 0,
+                    shelf: shelf || '-'
+                });
+                saveBooks(books);
+                
+                // Reset form
+                document.getElementById('titleInput').value = '';
+                document.getElementById('authorInput').value = '';
+                document.getElementById('publisherInput').value = '';
+                document.getElementById('yearInput').value = '';
+                document.getElementById('stockInput').value = '';
+                document.getElementById('shelfInput').value = '';
+                
+                renderBooks();
+            } else {
+                alert('Mohon lengkapi data buku!');
+            }
+        }
+
+        function showEditModal(index) {
+            const books = getBooks();
+            const book = books[index];
+            
+            document.getElementById('editIndex').value = index;
+            document.getElementById('editTitleInput').value = book.title;
+            document.getElementById('editAuthorInput').value = book.author;
+            document.getElementById('editPublisherInput').value = book.publisher;
+            document.getElementById('editYearInput').value = book.year;
+            document.getElementById('editStockInput').value = book.stock || 0;
+            document.getElementById('editShelfInput').value = book.shelf || '';
+            
+            document.getElementById('editModal').classList.remove('hidden');
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').classList.add('hidden');
+        }
+
+        function updateBook() {
+            const index = document.getElementById('editIndex').value;
+            const title = document.getElementById('editTitleInput').value.trim();
+            const author = document.getElementById('editAuthorInput').value.trim();
+            const publisher = document.getElementById('editPublisherInput').value.trim();
+            const year = document.getElementById('editYearInput').value;
+            const stock = document.getElementById('editStockInput').value;
+            const shelf = document.getElementById('editShelfInput').value.trim();
+
+            if (title && author && publisher && year) {
+                const books = getBooks();
+                books[index] = { 
+                    title, 
+                    author, 
+                    publisher, 
+                    year,
+                    stock: stock || 0,
+                    shelf: shelf || '-'
+                };
+                saveBooks(books);
+                closeEditModal();
+                renderBooks();
+            } else {
+                alert('Mohon lengkapi data buku!');
+            }
+        }
+
+        function deleteBook(index) {
+            if (confirm('Apakah Anda yakin ingin menghapus buku ini?')) {
+                const books = getBooks();
+                books.splice(index, 1);
+                saveBooks(books);
+                renderBooks();
+            }
+        }
+
+        window.onload = renderBooks;
+    </script>
+</body>
+</html> 

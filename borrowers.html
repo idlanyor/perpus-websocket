@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manajemen Data Peminjam</title>
+    <script src="https://unpkg.com/htmx.org@1.9.12/dist/htmx.min.js"></script>
+</head>
+<body class="min-h-screen bg-gray-100">
+    <!-- Topbar -->
+    <div class="bg-gray-800 py-2 px-4 flex items-center justify-between fixed top-0 w-full">
+        <div class="text-white">
+            <span>Aplikasi Peminjaman Buku</span>
+        </div>
+        <div class="flex gap-4">
+            <a href="index.html" class="text-white hover:text-gray-300">Peminjaman</a>
+            <a href="books.html" class="text-white hover:text-gray-300">Manajemen Buku</a>
+            <a href="borrowers.html" class="text-white hover:text-gray-300">Data Peminjam</a>
+        </div>
+    </div>
+
+    <!-- Konten Utama -->
+    <div class="container mx-auto p-5 mt-16">
+        <!-- Form Tambah Peminjam -->
+        <div class="bg-white p-5 rounded-lg shadow-md mb-5">
+            <h2 class="text-xl font-bold mb-4">Tambah Data Peminjam</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <input id="nameInput" type="text" placeholder="Nama Lengkap" 
+                    class="p-2 border rounded-lg">
+                <input id="idNumberInput" type="text" placeholder="Nomor Identitas" 
+                    class="p-2 border rounded-lg">
+                <input id="phoneInput" type="tel" placeholder="Nomor Telepon" 
+                    class="p-2 border rounded-lg">
+                <input id="addressInput" type="text" placeholder="Alamat" 
+                    class="p-2 border rounded-lg">
+            </div>
+            <button onclick="createBorrower()" 
+                class="mt-4 bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600">
+                Tambah Peminjam
+            </button>
+        </div>
+
+        <!-- Daftar Peminjam -->
+        <div class="bg-white p-5 rounded-lg shadow-md">
+            <h2 class="text-xl font-bold mb-4">Daftar Peminjam</h2>
+            <table class="min-w-full">
+                <thead class="bg-gray-100">
+                    <tr>
+                        <th class="py-2 px-4 text-left">Nama</th>
+                        <th class="py-2 px-4 text-left">No. Identitas</th>
+                        <th class="py-2 px-4 text-left">Telepon</th>
+                        <th class="py-2 px-4 text-left">Alamat</th>
+                        <th class="py-2 px-4 text-left">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="borrowersList">
+                    <!-- Daftar peminjam akan ditampilkan di sini -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Modal Edit Peminjam -->
+    <div id="editModal" class="fixed inset-0 bg-black bg-opacity-50 hidden">
+        <div class="bg-white p-5 rounded-lg w-96 mx-auto mt-20">
+            <h2 class="text-xl font-bold mb-4">Edit Data Peminjam</h2>
+            <input type="hidden" id="editIndex">
+            <div class="space-y-3">
+                <input id="editNameInput" type="text" placeholder="Nama Lengkap" 
+                    class="p-2 border rounded-lg w-full">
+                <input id="editIdNumberInput" type="text" placeholder="Nomor Identitas" 
+                    class="p-2 border rounded-lg w-full">
+                <input id="editPhoneInput" type="tel" placeholder="Nomor Telepon" 
+                    class="p-2 border rounded-lg w-full">
+                <input id="editAddressInput" type="text" placeholder="Alamat" 
+                    class="p-2 border rounded-lg w-full">
+            </div>
+            <div class="flex justify-end gap-2 mt-4">
+                <button onclick="updateBorrower()" 
+                    class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">
+                    Simpan
+                </button>
+                <button onclick="closeEditModal()" 
+                    class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600">
+                    Batal
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function getBorrowers() {
+            return JSON.parse(localStorage.getItem('borrowers') || '[]');
+        }
+
+        function saveBorrowers(borrowers) {
+            localStorage.setItem('borrowers', JSON.stringify(borrowers));
+        }
+
+        function renderBorrowers() {
+            const tbody = document.getElementById('borrowersList');
+            const borrowers = getBorrowers();
+            
+            tbody.innerHTML = borrowers.length === 0 
+                ? '<tr><td colspan="5" class="py-4 text-center">Tidak ada data peminjam</td></tr>'
+                : borrowers.map((borrower, index) => `
+                    <tr class="border-t">
+                        <td class="py-2 px-4">${borrower.name}</td>
+                        <td class="py-2 px-4">${borrower.idNumber}</td>
+                        <td class="py-2 px-4">${borrower.phone}</td>
+                        <td class="py-2 px-4">${borrower.address}</td>
+                        <td class="py-2 px-4">
+                            <button onclick="showEditModal(${index})" 
+                                class="bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600 mr-2">
+                                Edit
+                            </button>
+                            <button onclick="deleteBorrower(${index})" 
+                                class="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600">
+                                Hapus
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+        }
+
+        function createBorrower() {
+            const name = document.getElementById('nameInput').value.trim();
+            const idNumber = document.getElementById('idNumberInput').value.trim();
+            const phone = document.getElementById('phoneInput').value.trim();
+            const address = document.getElementById('addressInput').value.trim();
+
+            if (name && idNumber && phone && address) {
+                const borrowers = getBorrowers();
+                borrowers.push({ name, idNumber, phone, address });
+                saveBorrowers(borrowers);
+                
+                // Reset form
+                document.getElementById('nameInput').value = '';
+                document.getElementById('idNumberInput').value = '';
+                document.getElementById('phoneInput').value = '';
+                document.getElementById('addressInput').value = '';
+                
+                renderBorrowers();
+            }
+        }
+
+        function showEditModal(index) {
+            const borrowers = getBorrowers();
+            const borrower = borrowers[index];
+            
+            document.getElementById('editIndex').value = index;
+            document.getElementById('editNameInput').value = borrower.name;
+            document.getElementById('editIdNumberInput').value = borrower.idNumber;
+            document.getElementById('editPhoneInput').value = borrower.phone;
+            document.getElementById('editAddressInput').value = borrower.address;
+            
+            document.getElementById('editModal').classList.remove('hidden');
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').classList.add('hidden');
+        }
+
+        function updateBorrower() {
+            const index = document.getElementById('editIndex').value;
+            const name = document.getElementById('editNameInput').value.trim();
+            const idNumber = document.getElementById('editIdNumberInput').value.trim();
+            const phone = document.getElementById('editPhoneInput').value.trim();
+            const address = document.getElementById('editAddressInput').value.trim();
+
+            if (name && idNumber && phone && address) {
+                const borrowers = getBorrowers();
+                borrowers[index] = { name, idNumber, phone, address };
+                saveBorrowers(borrowers);
+                closeEditModal();
+                renderBorrowers();
+            }
+        }
+
+        function deleteBorrower(index) {
+            if (confirm('Apakah Anda yakin ingin menghapus data peminjam ini?')) {
+                const borrowers = getBorrowers();
+                borrowers.splice(index, 1);
+                saveBorrowers(borrowers);
+                renderBorrowers();
+            }
+        }
+
+        window.onload = renderBorrowers;
+    </script>
+</body>
+</html> 
